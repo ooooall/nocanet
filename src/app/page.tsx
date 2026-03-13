@@ -3,24 +3,39 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-function randomRoomName(): string {
-  return Math.random().toString(36).substring(2, 10);
+function secureRoomName(): string {
+  const array = new Uint8Array(12);
+  crypto.getRandomValues(array);
+  return Array.from(array)
+    .map((b) => b.toString(36))
+    .join("")
+    .substring(0, 12);
 }
 
 export default function Home() {
   const router = useRouter();
   const [roomCode, setRoomCode] = useState("");
+  const [roomPassword, setRoomPassword] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+  const [joinPassword, setJoinPassword] = useState("");
   const [showJoinInput, setShowJoinInput] = useState(false);
 
   function handleCreateRoom() {
-    router.push("/room/" + randomRoomName());
+    const name = secureRoomName();
+    const pwd = roomPassword.trim();
+    const url = pwd ? `/room/${name}?pwd=${encodeURIComponent(pwd)}` : `/room/${name}`;
+    router.push(url);
   }
 
   function handleJoin() {
-    const code = roomCode.trim();
+    const code = joinCode.trim();
     if (!code) return;
-    router.push("/room/" + code);
+    const pwd = joinPassword.trim();
+    const url = pwd ? `/room/${code}?pwd=${encodeURIComponent(pwd)}` : `/room/${code}`;
+    router.push(url);
   }
+
+  const hasCreatePassword = roomPassword.trim().length > 0;
 
   return (
     <div
@@ -30,21 +45,28 @@ export default function Home() {
       <main className="flex w-full max-w-md flex-1 flex-col items-center justify-center gap-14">
         <header className="text-center">
           <h1 className="text-4xl font-bold tracking-tight">NocaNet</h1>
-          <p className="mt-2 text-lg text-neutral-400">
-            Звонки без границ
-          </p>
+          <p className="mt-2 text-lg text-neutral-400">Звонки без границ</p>
         </header>
 
         <div className="flex w-full flex-col gap-4">
+          <input
+            type="password"
+            value={roomPassword}
+            onChange={(e) => setRoomPassword(e.target.value)}
+            placeholder="Пароль комнаты (необязательно)"
+            className="w-full rounded-lg border border-neutral-600 bg-neutral-800 px-4 py-3 text-white placeholder-neutral-500 outline-none focus:border-indigo-500"
+          />
           <button
             type="button"
             onClick={handleCreateRoom}
-            className="flex h-14 w-full items-center justify-center rounded-xl font-semibold transition hover:opacity-90"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
             style={{
-              background: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)",
+              background:
+                "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)",
               color: "#fff",
             }}
           >
+            {hasCreatePassword && <span aria-hidden>🔒</span>}
             Создать новый звонок
           </button>
 
@@ -60,19 +82,28 @@ export default function Home() {
             <div className="flex flex-col gap-3 rounded-xl border border-neutral-600 bg-neutral-900/50 p-4">
               <input
                 type="text"
-                value={roomCode}
-                onChange={(e) => setRoomCode(e.target.value)}
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleJoin()}
                 placeholder="Код комнаты"
                 className="w-full rounded-lg border border-neutral-600 bg-neutral-800 px-4 py-3 text-white placeholder-neutral-500 outline-none focus:border-indigo-500"
                 autoFocus
+              />
+              <input
+                type="password"
+                value={joinPassword}
+                onChange={(e) => setJoinPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                placeholder="Пароль комнаты (если задан)"
+                className="w-full rounded-lg border border-neutral-600 bg-neutral-800 px-4 py-3 text-white placeholder-neutral-500 outline-none focus:border-indigo-500"
               />
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowJoinInput(false);
-                    setRoomCode("");
+                    setJoinCode("");
+                    setJoinPassword("");
                   }}
                   className="flex-1 rounded-lg border border-neutral-600 py-2.5 font-medium text-neutral-300 transition hover:bg-neutral-800"
                 >
@@ -81,10 +112,11 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleJoin}
-                  disabled={!roomCode.trim()}
+                  disabled={!joinCode.trim()}
                   className="flex-1 rounded-lg py-2.5 font-semibold text-white transition disabled:opacity-50 hover:opacity-90"
                   style={{
-                    background: "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)",
+                    background:
+                      "linear-gradient(135deg, #6366f1 0%, #3b82f6 100%)",
                   }}
                 >
                   Войти
@@ -93,6 +125,36 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        <section className="grid w-full grid-cols-3 gap-3 text-center">
+          <div className="rounded-lg border border-neutral-700 bg-neutral-900/50 px-2 py-3">
+            <span className="text-lg" aria-hidden>🔒</span>
+            <p className="mt-1 text-xs font-medium text-neutral-300">
+              E2E шифрование
+            </p>
+            <p className="mt-0.5 text-[10px] text-neutral-500">
+              Ваш звонок зашифрован на устройстве
+            </p>
+          </div>
+          <div className="rounded-lg border border-neutral-700 bg-neutral-900/50 px-2 py-3">
+            <span className="text-lg" aria-hidden>🕵️</span>
+            <p className="mt-1 text-xs font-medium text-neutral-300">
+              Без логов
+            </p>
+            <p className="mt-0.5 text-[10px] text-neutral-500">
+              Мы не храним данные звонков
+            </p>
+          </div>
+          <div className="rounded-lg border border-neutral-700 bg-neutral-900/50 px-2 py-3">
+            <span className="text-lg" aria-hidden>🌍</span>
+            <p className="mt-1 text-xs font-medium text-neutral-300">
+              Без границ
+            </p>
+            <p className="mt-0.5 text-[10px] text-neutral-500">
+              Работает из любой страны
+            </p>
+          </div>
+        </section>
       </main>
 
       <p className="text-center text-sm text-neutral-500">
