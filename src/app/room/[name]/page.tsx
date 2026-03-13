@@ -8,6 +8,7 @@ import {
   RoomAudioRenderer,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
+import { ConnectionState } from "livekit-client";
 
 export default function RoomPage() {
   const params = useParams();
@@ -17,6 +18,9 @@ export default function RoomPage() {
   const [username, setUsername] = useState("");
   const [joined, setJoined] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(
+    ConnectionState.Disconnected
+  );
 
   async function getToken(roomName: string, user: string) {
     const res = await fetch(
@@ -274,7 +278,39 @@ export default function RoomPage() {
               connect={true}
               video={false}
               audio={true}
-              onDisconnected={() => setJoined(false)}
+              onConnected={() => setConnectionState(ConnectionState.Connected)}
+              onDisconnected={() => {
+                setConnectionState(ConnectionState.Disconnected);
+                setJoined(false);
+              }}
+              onError={(error) => console.error("LiveKit error:", error)}
+              options={{
+                adaptiveStream: true,
+                dynacast: true,
+                reconnectPolicy: {
+                  nextRetryDelayInMs(context) {
+                    if (context.retryCount >= 10) return null;
+                    return Math.min(
+                      1000 * Math.pow(2, context.retryCount),
+                      30000
+                    );
+                  },
+                },
+              }}
+              connectOptions={{
+                rtcConfig: {
+                  iceTransportPolicy: "all",
+                  iceServers: [
+                    { urls: "stun:stun.l.google.com:19302" },
+                    { urls: "stun:stun1.l.google.com:19302" },
+                    {
+                      urls: "turn:relay1.expressturn.com:3478",
+                      username: "efRISD9BKUBO6BGCAP",
+                      credential: "hGnsSLpJGJ5CqrUq",
+                    },
+                  ],
+                },
+              }}
             >
               <VideoConference />
               <RoomAudioRenderer />
