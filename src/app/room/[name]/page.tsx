@@ -129,36 +129,138 @@ function RoomPageContent() {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#0f0f0f] text-white">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-neutral-700/80 bg-[#0f0f0f] px-4">
-        <span className="flex items-center gap-2 text-sm font-semibold text-white">
-          NocaNet
-          <span className="flex items-center gap-1.5 text-xs font-normal text-emerald-400">
-            <span aria-hidden>🔒</span>
-            E2E Зашифровано
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100%",
+        overflow: "hidden",
+        background: "var(--bg)",
+        color: "var(--text)",
+      }}
+    >
+      <header
+        style={{
+          height: 48,
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          padding: "0 16px",
+          background: "rgba(5,5,8,0.95)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              background:
+                "linear-gradient(135deg, var(--accent) 0%, var(--accent3) 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "Syne, sans-serif",
+              fontWeight: 800,
+              fontSize: 12,
+              color: "#fff",
+            }}
+          >
+            N
+          </div>
+          <span
+            style={{
+              fontFamily: "Syne, sans-serif",
+              fontWeight: 800,
+              fontSize: 14,
+              color: "var(--text)",
+            }}
+          >
+            NocaNet
           </span>
-          {password && (
-            <span className="flex items-center gap-1.5 text-xs font-normal text-amber-400">
-              <span aria-hidden>🔐</span>
-              Защищено паролем
-            </span>
-          )}
-        </span>
-        <span className="flex-1 truncate text-center text-sm text-neutral-300">
-          {name || "—"}
-        </span>
-        <div className="flex shrink-0 items-center gap-2">
-          <div className="relative">
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            flex: 1,
+            justifyContent: "center",
+            minWidth: 0,
+          }}
+        >
+          <span style={{ color: "var(--green)", fontSize: 12 }}>🔒</span>
+          <span
+            style={{
+              fontFamily: "DM Sans, sans-serif",
+              fontWeight: 500,
+              fontSize: 13,
+              color: "var(--text-muted)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {name || "—"}
+          </span>
+          <span
+            style={{
+              fontSize: 10,
+              color: "var(--green)",
+              border: "1px solid rgba(16,185,129,0.3)",
+              background: "rgba(16,185,129,0.08)",
+              borderRadius: 4,
+              padding: "2px 6px",
+            }}
+          >
+            E2E
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ position: "relative" }}>
             <button
               type="button"
               onClick={handleInvite}
-              className="rounded-lg bg-neutral-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-600"
+              style={{
+                background: "var(--surface2)",
+                border: "1px solid var(--border-bright)",
+                borderRadius: 8,
+                padding: "6px 14px",
+                fontFamily: "DM Sans, sans-serif",
+                fontSize: 12,
+                color: "var(--text)",
+                cursor: "pointer",
+              }}
               title="Пароль отправьте другу отдельно!"
             >
               Пригласить
             </button>
             {inviteTooltip && (
-              <span className="absolute left-1/2 top-full z-20 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-neutral-800 px-2 py-1 text-[10px] text-neutral-300 shadow-lg">
+              <span
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: "100%",
+                  marginTop: 4,
+                  transform: "translateX(-50%)",
+                  whiteSpace: "nowrap",
+                  zIndex: 20,
+                  borderRadius: 6,
+                  background: "var(--surface2)",
+                  padding: "4px 8px",
+                  fontSize: 10,
+                  color: "var(--text-muted)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                }}
+              >
                 Пароль отправьте другу отдельно!
               </span>
             )}
@@ -166,12 +268,25 @@ function RoomPageContent() {
           <button
             type="button"
             onClick={handleCopyLink}
-            className="rounded-lg bg-neutral-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-600"
+            style={{
+              background: "var(--surface2)",
+              border: "1px solid var(--border-bright)",
+              borderRadius: 8,
+              padding: "6px 14px",
+              fontFamily: "DM Sans, sans-serif",
+              fontSize: 12,
+              color: copyStatus === "copied" ? "var(--green)" : "var(--text)",
+              cursor: "pointer",
+              transition: "color 0.2s ease",
+            }}
           >
-            {copyStatus === "copied" ? "Скопировано!" : "Скопировать ссылку"}
+            {copyStatus === "copied"
+              ? "✓ Скопировано!"
+              : "⬡ Скопировать ссылку"}
           </button>
         </div>
       </header>
+
       <div
         id="jitsi-container"
         style={{ width: "100%", height: "calc(100vh - 48px)" }}
@@ -182,19 +297,60 @@ function RoomPageContent() {
 
 function RoomPageFallback() {
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#0f0f0f] text-white">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-neutral-700/80 bg-[#0f0f0f] px-4">
-        <span className="text-sm font-semibold text-white">NocaNet</span>
-        <span className="flex-1 text-center text-sm text-neutral-400">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        width: "100%",
+        overflow: "hidden",
+        background: "var(--bg)",
+        color: "var(--text)",
+      }}
+    >
+      <header
+        style={{
+          height: 48,
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 16px",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "Syne, sans-serif",
+            fontWeight: 800,
+            fontSize: 14,
+          }}
+        >
+          NocaNet
+        </span>
+        <span
+          style={{
+            fontFamily: "DM Sans, sans-serif",
+            fontSize: 13,
+            color: "var(--text-muted)",
+          }}
+        >
           Загрузка...
         </span>
-        <div className="w-24" />
+        <div style={{ width: 120 }} />
       </header>
       <div
-        className="flex flex-1 items-center justify-center"
-        style={{ height: "calc(100vh - 48px)" }}
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "calc(100vh - 48px)",
+        }}
       >
-        <span className="text-neutral-500">Подключение к комнате...</span>
+        <span style={{ color: "var(--text-muted)", fontSize: 14 }}>
+          Подключение к комнате...
+        </span>
       </div>
     </div>
   );
