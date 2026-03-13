@@ -40,11 +40,35 @@ export default function RoomPage() {
         parentNode: container,
         width: "100%",
         height: "100%",
+        interfaceConfigOverwrite: {
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUESTS: false,
+          SHOW_BRAND_WATERMARK: false,
+          SHOW_POWERED_BY: false,
+          SHOW_PROMOTIONAL_CLOSE_PAGE: false,
+          TOOLBAR_BUTTONS: [
+            "microphone",
+            "camera",
+            "closedcaptions",
+            "desktop",
+            "fullscreen",
+            "fodeviceselection",
+            "hangup",
+            "chat",
+            "settings",
+            "raisehand",
+            "videoquality",
+            "tileview",
+          ],
+          DISPLAY_WELCOME_PAGE_CONTENT: false,
+          DISPLAY_WELCOME_PAGE_TOOLBAR_ADDITIONAL_CONTENT: false,
+        },
         configOverwrite: {
           startWithAudioMuted: false,
           startWithVideoMuted: false,
+          disableThirdPartyRequests: true,
+          disableAP: true,
         },
-        interfaceConfigOverwrite: { SHOW_JITSI_WATERMARK: false },
       });
     }
 
