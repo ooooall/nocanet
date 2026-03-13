@@ -44,7 +44,7 @@ function RoomPageContent() {
       if (cancelled) return;
       const container = document.getElementById("jitsi-container");
       if (!container) return;
-      api = new window.JitsiMeetExternalAPI("8x8.vc", {
+      api = new window.JitsiMeetExternalAPI("meet.jit.si", {
         roomName: name,
         parentNode: container,
         width: "100%",
@@ -57,7 +57,6 @@ function RoomPageContent() {
           SHOW_PROMOTIONAL_CLOSE_PAGE: false,
           TOOLBAR_BUTTONS: [
             "microphone",
-            "camera",
             "closedcaptions",
             "desktop",
             "fullscreen",
@@ -74,29 +73,13 @@ function RoomPageContent() {
         },
         configOverwrite: {
           startWithAudioMuted: false,
-          startWithVideoMuted: false,
+          startWithVideoMuted: true,
           password: password || undefined,
-          p2p: {
-            enabled: true,
-            stunServers: [
-              { urls: "stun:stun.l.google.com:19302" },
-              { urls: "stun:stun1.l.google.com:19302" },
-              { urls: "stun:stun2.l.google.com:19302" },
-              { urls: "stun:stun.cloudflare.com:3478" },
-            ],
-          },
-          constraints: {
-            video: {
-              height: { ideal: 480, max: 720, min: 180 },
-              width: { ideal: 640, max: 1280, min: 320 },
-              frameRate: { max: 24 },
-            },
-          },
+          p2p: { enabled: true },
           enableLayerSuspension: true,
-          disableSimulcast: false,
-          channelLastN: 4,
-          startBitrate: 800,
-          desktopSharingFrameRate: { min: 5, max: 15 },
+          channelLastN: 2,
+          disableAudioLevels: true,
+          enableNoisyMicDetection: false,
         },
       });
       api.addEventListener("videoConferenceJoined", () => {
@@ -109,7 +92,7 @@ function RoomPageContent() {
       initJitsi();
     } else {
       script = document.createElement("script");
-      script.src = "https://8x8.vc/external_api.js";
+      script.src = "https://meet.jit.si/external_api.js";
       script.onload = () => initJitsi();
       document.head.appendChild(script);
     }
