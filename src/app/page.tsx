@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-function secureRoomName(): string {
+function generateRoomName(): string {
   const array = new Uint8Array(12);
   crypto.getRandomValues(array);
   return Array.from(array)
@@ -40,34 +40,18 @@ const gridSvg = (
 
 export default function Home() {
   const router = useRouter();
-  const [roomPassword, setRoomPassword] = useState("");
   const [joinCode, setJoinCode] = useState("");
-  const [joinPassword, setJoinPassword] = useState("");
-  const [showCreatePassword, setShowCreatePassword] = useState(false);
-  const [showJoinPassword, setShowJoinPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   function handleCreateRoom() {
-    setLoading(true);
-    const name = secureRoomName();
-    const pwd = roomPassword.trim();
-    const url = pwd
-      ? `/room/${name}?pwd=${encodeURIComponent(pwd)}`
-      : `/room/${name}`;
-    router.push(url);
+    const roomName = generateRoomName();
+    router.push("/room/" + roomName);
   }
 
   function handleJoin() {
     const code = joinCode.trim();
     if (!code) return;
-    const pwd = joinPassword.trim();
-    const url = pwd
-      ? `/room/${code}?pwd=${encodeURIComponent(pwd)}`
-      : `/room/${code}`;
-    router.push(url);
+    router.push("/room/" + code);
   }
-
-  const hasCreatePassword = roomPassword.trim().length > 0;
 
   return (
     <>
@@ -313,7 +297,6 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleCreateRoom}
-                disabled={loading}
                 style={{
                   width: "100%",
                   height: 52,
@@ -325,7 +308,7 @@ export default function Home() {
                   fontWeight: 500,
                   fontSize: 15,
                   color: "#fff",
-                  cursor: loading ? "wait" : "pointer",
+                  cursor: "pointer",
                   boxShadow:
                     "0 4px 24px rgba(124,106,255,0.4), inset 0 1px 0 rgba(255,255,255,0.15)",
                   display: "flex",
@@ -336,11 +319,9 @@ export default function Home() {
                     "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading) {
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                    e.currentTarget.style.boxShadow =
-                      "0 8px 32px rgba(124,106,255,0.6), inset 0 1px 0 rgba(255,255,255,0.15)";
-                  }
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 8px 32px rgba(124,106,255,0.6), inset 0 1px 0 rgba(255,255,255,0.15)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
@@ -348,137 +329,37 @@ export default function Home() {
                     "0 4px 24px rgba(124,106,255,0.4), inset 0 1px 0 rgba(255,255,255,0.15)";
                 }}
                 onMouseDown={(e) => {
-                  if (!loading)
-                    e.currentTarget.style.transform =
-                      "translateY(1px) scale(0.99)";
+                  e.currentTarget.style.transform =
+                    "translateY(1px) scale(0.99)";
                 }}
                 onMouseUp={(e) => {
                   e.currentTarget.style.transform = "translateY(-1px)";
                 }}
               >
-                {loading ? (
-                  <span style={{ display: "flex", gap: 4 }}>
-                    <span
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        background: "#fff",
-                        animation: "dotPulse 1s ease-in-out infinite",
-                      }}
-                    />
-                    <span
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        background: "#fff",
-                        animation: "dotPulse 1s ease-in-out 0.15s infinite",
-                      }}
-                    />
-                    <span
-                      style={{
-                        width: 6,
-                        height: 6,
-                        borderRadius: "50%",
-                        background: "#fff",
-                        animation: "dotPulse 1s ease-in-out 0.3s infinite",
-                      }}
-                    />
-                  </span>
-                ) : (
-                  <>
-                    <span
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 8,
-                        background: "rgba(255,255,255,0.15)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 14,
-                      }}
-                    >
-                      ☎
-                    </span>
-                    Создать звонок
-                    <span
-                      style={{
-                        color: "rgba(255,255,255,0.6)",
-                        fontSize: 18,
-                      }}
-                    >
-                      →
-                    </span>
-                  </>
-                )}
-              </button>
-
-              {hasCreatePassword && (
                 <span
                   style={{
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    marginTop: 6,
-                    display: "inline-block",
+                    width: 28,
+                    height: 28,
+                    borderRadius: 8,
+                    background: "rgba(255,255,255,0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 14,
                   }}
-                  aria-hidden
                 >
-                  🔒 Пароль задан
+                  ☎
                 </span>
-              )}
-
-              {showCreatePassword && (
-                <div style={{ marginTop: 12 }}>
-                  <input
-                    type="password"
-                    value={roomPassword}
-                    onChange={(e) => setRoomPassword(e.target.value)}
-                    placeholder="Пароль комнаты (необязательно)"
-                    style={{
-                      width: "100%",
-                      height: 44,
-                      background: "var(--surface2)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      padding: "0 14px",
-                      fontFamily: "DM Sans, sans-serif",
-                      fontSize: 14,
-                      color: "var(--text)",
-                      outline: "none",
-                      transition: "all 0.2s ease",
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = "var(--accent)";
-                      e.target.style.boxShadow =
-                        "0 0 0 3px rgba(124,106,255,0.15)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--border)";
-                      e.target.style.boxShadow = "none";
-                    }}
-                  />
-                </div>
-              )}
-              {!showCreatePassword && (
-                <button
-                  type="button"
-                  onClick={() => setShowCreatePassword(true)}
+                Создать звонок
+                <span
                   style={{
-                    marginTop: 10,
-                    background: "none",
-                    border: "none",
-                    fontFamily: "DM Sans, sans-serif",
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    cursor: "pointer",
-                    textDecoration: "underline",
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: 18,
                   }}
                 >
-                  Задать пароль (необязательно)
-                </button>
-              )}
+                  →
+                </span>
+              </button>
 
               <div
                 style={{
@@ -587,78 +468,6 @@ export default function Home() {
                   Войти
                 </button>
               </div>
-
-              {showJoinPassword ? (
-                <div
-                  style={{
-                    marginTop: 12,
-                    position: "relative",
-                    transition: "height 0.3s ease, opacity 0.3s ease",
-                  }}
-                >
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 14,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      fontSize: 14,
-                      opacity: 0.5,
-                      pointerEvents: "none",
-                      zIndex: 1,
-                    }}
-                  >
-                    🔒
-                  </span>
-                  <input
-                    type="password"
-                    value={joinPassword}
-                    onChange={(e) => setJoinPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-                    placeholder="Пароль (необязательно)"
-                    style={{
-                      width: "100%",
-                      height: 52,
-                      background: "var(--surface2)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 14,
-                      padding: "0 16px 0 40px",
-                      fontFamily: "DM Sans, sans-serif",
-                      fontSize: 15,
-                      color: "var(--text)",
-                      outline: "none",
-                      caretColor: "var(--accent)",
-                      transition: "all 0.2s ease",
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = "var(--accent)";
-                      e.target.style.boxShadow =
-                        "0 0 0 3px rgba(124,106,255,0.15)";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = "var(--border)";
-                      e.target.style.boxShadow = "none";
-                    }}
-                  />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowJoinPassword(true)}
-                  style={{
-                    marginTop: 10,
-                    background: "none",
-                    border: "none",
-                    fontFamily: "DM Sans, sans-serif",
-                    fontSize: 12,
-                    color: "var(--text-muted)",
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                  }}
-                >
-                  Есть пароль?
-                </button>
-              )}
             </div>
           </div>
         </section>

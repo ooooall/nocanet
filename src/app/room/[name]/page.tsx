@@ -1,135 +1,192 @@
 "use client";
 
-import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import {
+  LiveKitRoom,
+  VideoConference,
+  RoomAudioRenderer,
+} from "@livekit/components-react";
+import "@livekit/components-styles";
 
-declare global {
-  interface Window {
-    JitsiMeetExternalAPI: new (
-      domain: string,
-      options: {
-        roomName: string;
-        parentNode: HTMLElement | null;
-        width: string;
-        height: string;
-        configOverwrite?: object;
-        interfaceConfigOverwrite?: object;
-      }
-    ) => JitsiApi;
-  }
-}
-
-interface JitsiApi {
-  dispose: () => void;
-  addEventListener: (event: string, handler: () => void) => void;
-  executeCommand: (command: string, ...args: unknown[]) => void;
-}
-
-function RoomPageContent() {
+export default function RoomPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const name = typeof params.name === "string" ? params.name : "";
-  const password = searchParams.get("pwd");
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied">("idle");
-  const [inviteTooltip, setInviteTooltip] = useState(false);
+  const [token, setToken] = useState("");
+  const [liveKitUrl, setLiveKitUrl] = useState("");
+  const [username, setUsername] = useState("");
+  const [joined, setJoined] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (!name) return;
+  async function getToken(roomName: string, user: string) {
+    const res = await fetch(
+      "/api/token?room=" + encodeURIComponent(roomName) + "&username=" + encodeURIComponent(user)
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? "Failed to get token");
+    setToken(data.token);
+    setLiveKitUrl(data.url ?? "");
+  }
 
-    let api: JitsiApi | null = null;
-    let cancelled = false;
-    let script: HTMLScriptElement | null = null;
-
-    function initJitsi() {
-      if (cancelled) return;
-      const container = document.getElementById("jitsi-container");
-      if (!container) return;
-      api = new window.JitsiMeetExternalAPI("meet.jit.si", {
-        roomName: name,
-        parentNode: container,
-        width: "100%",
-        height: "100%",
-        interfaceConfigOverwrite: {
-          SHOW_JITSI_WATERMARK: false,
-          SHOW_WATERMARK_FOR_GUESTS: false,
-          SHOW_BRAND_WATERMARK: false,
-          SHOW_POWERED_BY: false,
-          SHOW_PROMOTIONAL_CLOSE_PAGE: false,
-          TOOLBAR_BUTTONS: [
-            "microphone",
-            "closedcaptions",
-            "desktop",
-            "fullscreen",
-            "fodeviceselection",
-            "hangup",
-            "chat",
-            "settings",
-            "raisehand",
-            "videoquality",
-            "tileview",
-          ],
-          DISPLAY_WELCOME_PAGE_CONTENT: false,
-          DISPLAY_WELCOME_PAGE_TOOLBAR_ADDITIONAL_CONTENT: false,
-        },
-        configOverwrite: {
-          startWithAudioMuted: false,
-          startWithVideoMuted: true,
-          password: password || undefined,
-          p2p: { enabled: true },
-          enableLayerSuspension: true,
-          channelLastN: 2,
-          disableAudioLevels: true,
-          enableNoisyMicDetection: false,
-        },
-      });
-      api.addEventListener("videoConferenceJoined", () => {
-        api?.executeCommand("toggleE2EE", true);
-        if (password) api?.executeCommand("password", password);
-      });
-    }
-
-    if (typeof window !== "undefined" && window.JitsiMeetExternalAPI) {
-      initJitsi();
-    } else {
-      script = document.createElement("script");
-      script.src = "https://meet.jit.si/external_api.js";
-      script.onload = () => initJitsi();
-      document.head.appendChild(script);
-    }
-
-    return () => {
-      cancelled = true;
-      if (api) api.dispose();
-      if (script?.parentNode) script.parentNode.removeChild(script);
-    };
-  }, [name, password]);
-
-  function handleCopyLink() {
+  function copyLink() {
     if (typeof window === "undefined") return;
     window.navigator.clipboard.writeText(window.location.href);
-    setCopyStatus("copied");
-    setTimeout(() => setCopyStatus("idle"), 2000);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }
 
-  function handleInvite() {
-    if (typeof window === "undefined") return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("pwd");
-    window.navigator.clipboard.writeText(url.toString());
-    setInviteTooltip(true);
-    setTimeout(() => setInviteTooltip(false), 3000);
+  async function handleJoin() {
+    if (!username.trim() || !name) return;
+    await getToken(name, username.trim());
+    setJoined(true);
+  }
+
+  if (!joined) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#050508",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 400,
+            background: "#0d0d14",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 24,
+            padding: 32,
+            boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background:
+                  "linear-gradient(135deg, #7c6aff 0%, #06b6d4 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "Syne, sans-serif",
+                fontWeight: 800,
+                fontSize: 18,
+                color: "#fff",
+              }}
+            >
+              N
+            </div>
+            <span
+              style={{
+                fontFamily: "Syne, sans-serif",
+                fontWeight: 800,
+                fontSize: 20,
+                color: "#f0f0ff",
+              }}
+            >
+              NocaNet
+            </span>
+          </div>
+
+          <p
+            style={{
+              fontWeight: 700,
+              fontSize: 14,
+              color: "rgba(240,240,255,0.6)",
+              marginBottom: 8,
+            }}
+          >
+            Комната:
+          </p>
+          <p
+            style={{
+              fontWeight: 700,
+              fontSize: 18,
+              color: "#f0f0ff",
+              marginBottom: 24,
+              wordBreak: "break-all",
+            }}
+          >
+            {name || "—"}
+          </p>
+
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+            placeholder="Ваше имя..."
+            style={{
+              width: "100%",
+              height: 48,
+              background: "#13131e",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 12,
+              padding: "0 16px",
+              fontSize: 15,
+              color: "#f0f0ff",
+              outline: "none",
+              marginBottom: 20,
+              boxSizing: "border-box",
+              transition: "border-color 0.2s, box-shadow 0.2s",
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = "#7c6aff";
+              e.target.style.boxShadow = "0 0 0 3px rgba(124,106,255,0.2)";
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = "rgba(255,255,255,0.06)";
+              e.target.style.boxShadow = "none";
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={handleJoin}
+            disabled={!username.trim()}
+            style={{
+              width: "100%",
+              height: 52,
+              background: "linear-gradient(135deg, #7c6aff 0%, #6d28d9 100%)",
+              border: "none",
+              borderRadius: 14,
+              fontSize: 15,
+              fontWeight: 600,
+              color: "#fff",
+              cursor: username.trim() ? "pointer" : "not-allowed",
+              opacity: username.trim() ? 1 : 0.5,
+              transition: "opacity 0.2s",
+            }}
+          >
+            Войти в звонок
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div
       style={{
+        height: "100vh",
         display: "flex",
         flexDirection: "column",
-        height: "100vh",
-        width: "100%",
-        overflow: "hidden",
-        background: "var(--bg)",
-        color: "var(--text)",
+        background: "#050508",
+        color: "#f0f0ff",
       }}
     >
       <header
@@ -142,9 +199,7 @@ function RoomPageContent() {
           gap: 12,
           padding: "0 16px",
           background: "rgba(5,5,8,0.95)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          borderBottom: "1px solid var(--border)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -154,7 +209,7 @@ function RoomPageContent() {
               height: 24,
               borderRadius: 6,
               background:
-                "linear-gradient(135deg, var(--accent) 0%, var(--accent3) 100%)",
+                "linear-gradient(135deg, #7c6aff 0%, #06b6d4 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -171,187 +226,62 @@ function RoomPageContent() {
               fontFamily: "Syne, sans-serif",
               fontWeight: 800,
               fontSize: 14,
-              color: "var(--text)",
+              color: "#f0f0ff",
             }}
           >
             NocaNet
           </span>
         </div>
 
-        <div
+        <span
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
             flex: 1,
-            justifyContent: "center",
-            minWidth: 0,
-          }}
-        >
-          <span style={{ color: "var(--green)", fontSize: 12 }}>🔒</span>
-          <span
-            style={{
-              fontFamily: "DM Sans, sans-serif",
-              fontWeight: 500,
-              fontSize: 13,
-              color: "var(--text-muted)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {name || "—"}
-          </span>
-          <span
-            style={{
-              fontSize: 10,
-              color: "var(--green)",
-              border: "1px solid rgba(16,185,129,0.3)",
-              background: "rgba(16,185,129,0.08)",
-              borderRadius: 4,
-              padding: "2px 6px",
-            }}
-          >
-            E2E
-          </span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={handleInvite}
-              style={{
-                background: "var(--surface2)",
-                border: "1px solid var(--border-bright)",
-                borderRadius: 8,
-                padding: "6px 14px",
-                fontFamily: "DM Sans, sans-serif",
-                fontSize: 12,
-                color: "var(--text)",
-                cursor: "pointer",
-              }}
-              title="Пароль отправьте другу отдельно!"
-            >
-              Пригласить
-            </button>
-            {inviteTooltip && (
-              <span
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: "100%",
-                  marginTop: 4,
-                  transform: "translateX(-50%)",
-                  whiteSpace: "nowrap",
-                  zIndex: 20,
-                  borderRadius: 6,
-                  background: "var(--surface2)",
-                  padding: "4px 8px",
-                  fontSize: 10,
-                  color: "var(--text-muted)",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                }}
-              >
-                Пароль отправьте другу отдельно!
-              </span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleCopyLink}
-            style={{
-              background: "var(--surface2)",
-              border: "1px solid var(--border-bright)",
-              borderRadius: 8,
-              padding: "6px 14px",
-              fontFamily: "DM Sans, sans-serif",
-              fontSize: 12,
-              color: copyStatus === "copied" ? "var(--green)" : "var(--text)",
-              cursor: "pointer",
-              transition: "color 0.2s ease",
-            }}
-          >
-            {copyStatus === "copied"
-              ? "✓ Скопировано!"
-              : "⬡ Скопировать ссылку"}
-          </button>
-        </div>
-      </header>
-
-      <div
-        id="jitsi-container"
-        style={{ width: "100%", height: "calc(100vh - 48px)" }}
-      />
-    </div>
-  );
-}
-
-function RoomPageFallback() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100%",
-        overflow: "hidden",
-        background: "var(--bg)",
-        color: "var(--text)",
-      }}
-    >
-      <header
-        style={{
-          height: 48,
-          flexShrink: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 16px",
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "Syne, sans-serif",
-            fontWeight: 800,
-            fontSize: 14,
-          }}
-        >
-          NocaNet
-        </span>
-        <span
-          style={{
-            fontFamily: "DM Sans, sans-serif",
+            textAlign: "center",
             fontSize: 13,
-            color: "var(--text-muted)",
+            color: "rgba(240,240,255,0.6)",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
-          Загрузка...
+          {name || "—"}
         </span>
-        <div style={{ width: 120 }} />
+
+        <button
+          type="button"
+          onClick={copyLink}
+          style={{
+            background: "#13131e",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: 8,
+            padding: "6px 14px",
+            fontSize: 12,
+            color: copied ? "#10b981" : "#f0f0ff",
+            cursor: "pointer",
+            transition: "color 0.2s",
+          }}
+        >
+          {copied ? "Скопировано!" : "Скопировать ссылку"}
+        </button>
       </header>
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "calc(100vh - 48px)",
-        }}
-      >
-        <span style={{ color: "var(--text-muted)", fontSize: 14 }}>
-          Подключение к комнате...
-        </span>
+
+      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+        {token && liveKitUrl && (
+          <div style={{ position: "absolute", inset: 0 }}>
+            <LiveKitRoom
+              token={token}
+              serverUrl={liveKitUrl}
+              connect={true}
+              video={false}
+              audio={true}
+              onDisconnected={() => setJoined(false)}
+            >
+              <VideoConference />
+              <RoomAudioRenderer />
+            </LiveKitRoom>
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-export default function RoomPage() {
-  return (
-    <Suspense fallback={<RoomPageFallback />}>
-      <RoomPageContent />
-    </Suspense>
   );
 }
