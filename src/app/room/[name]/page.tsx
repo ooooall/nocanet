@@ -1,0 +1,95 @@
+"use client";
+
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+declare global {
+  interface Window {
+    JitsiMeetExternalAPI: new (
+      domain: string,
+      options: {
+        roomName: string;
+        parentNode: HTMLElement | null;
+        width: string;
+        height: string;
+        configOverwrite?: object;
+        interfaceConfigOverwrite?: object;
+      }
+    ) => { dispose: () => void };
+  }
+}
+
+export default function RoomPage() {
+  const params = useParams();
+  const name = typeof params.name === "string" ? params.name : "";
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied">("idle");
+
+  useEffect(() => {
+    if (!name) return;
+
+    let api: { dispose: () => void } | null = null;
+    let cancelled = false;
+    let script: HTMLScriptElement | null = null;
+
+    function initJitsi() {
+      if (cancelled) return;
+      const container = document.getElementById("jitsi-container");
+      if (!container) return;
+      api = new window.JitsiMeetExternalAPI("meet.jit.si", {
+        roomName: name,
+        parentNode: container,
+        width: "100%",
+        height: "100%",
+        configOverwrite: {
+          startWithAudioMuted: false,
+          startWithVideoMuted: false,
+        },
+        interfaceConfigOverwrite: { SHOW_JITSI_WATERMARK: false },
+      });
+    }
+
+    if (typeof window !== "undefined" && window.JitsiMeetExternalAPI) {
+      initJitsi();
+    } else {
+      script = document.createElement("script");
+      script.src = "https://meet.jit.si/external_api.js";
+      script.onload = () => initJitsi();
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      cancelled = true;
+      if (api) api.dispose();
+      if (script?.parentNode) script.parentNode.removeChild(script);
+    };
+  }, [name]);
+
+  function handleCopyLink() {
+    if (typeof window === "undefined") return;
+    window.navigator.clipboard.writeText(window.location.href);
+    setCopyStatus("copied");
+    setTimeout(() => setCopyStatus("idle"), 2000);
+  }
+
+  return (
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#0f0f0f] text-white">
+      <header className="flex h-12 shrink-0 items-center justify-between gap-4 border-b border-neutral-700/80 bg-[#0f0f0f] px-4">
+        <span className="text-sm font-semibold text-white">NocaNet</span>
+        <span className="flex-1 truncate text-center text-sm text-neutral-300">
+          {name || "—"}
+        </span>
+        <button
+          type="button"
+          onClick={handleCopyLink}
+          className="shrink-0 rounded-lg bg-neutral-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-600"
+        >
+          {copyStatus === "copied" ? "Скопировано!" : "Скопировать ссылку"}
+        </button>
+      </header>
+      <div
+        id="jitsi-container"
+        style={{ width: "100%", height: "calc(100vh - 48px)" }}
+      />
+    </div>
+  );
+}
